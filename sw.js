@@ -1,14 +1,5 @@
 const CACHE_VERSION = 'v1';
 
-const required_files = [
-    "/index.html",
-    "/assets/style/dist/main.css",
-    "/assets/libs/animate.min.css",
-    "/assets/libs/jquery-3.6.0.min.js",
-    "/assets/scripts/main.js"
-];
-
-
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_VERSION).then((cache) => {

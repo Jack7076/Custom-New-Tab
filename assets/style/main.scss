@@ -47,14 +47,20 @@ body {
     }
 }
 
-.countdown_wrapper {
-    grid-column: 1 / 2;
+.post_reference_wrapper {
+    grid-column: 1 / 4;
     width: 100%;
     z-index: 10;
     background-color: #fefefe;
-    opacity: 0.4;
+    opacity: 0.2;
     position: absolute;
     bottom: 0;
     left: 0;
     height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    a {
+        color: #0e0e0e;
+    }
 }

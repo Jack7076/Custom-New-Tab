@@ -1,12 +1,10 @@
 navigator.serviceWorker.register("sw.js");
 
 const fetch_posts = 50;
-const image_ttl = 10; // Minutes for Image to Remain on Page and in Cache unless offline.
+const image_ttl = 30; // Minutes for Image to Remain on Page and in Cache unless offline.
 const search_query = "flair:Desktop" // Search Query to be passed to Reddit API
 const subreddit = "Animewallpaper"; // Subreddit to search
 const sort_mode = "new"; // Sort Method new|hot|top|relevance
-var globalCounter = null; // Counter Interval Function, set for global code access.
-var countdownTime = null; // Set Countdown Time Globally
 
 var requesting_image = false;
 
@@ -20,11 +18,9 @@ $(document).ready(() => {
         // Data Already Exists, retrieve image from browser storage.
         var image = localStorage.getItem("image");
         $("#app").css("background-image", `url(${image})`);
-        // Update Countdown Timer.
-        var image_update_time = new Date();
-        image_update_time.setTime(localStorage.getItem("imageFetchTime"));
-        image_update_time += image_ttl * 60 * 1000;
-        updateCountdown(image_update_time);
+        // Set Link to Post
+        $(".post_reference a").text(localStorage.getItem("imagePostURI"));
+        $(".post_reference a").attr("href", localStorage.getItem("imagePostURI"));
     }
     // Run a task to check update the image on a rolling cycle.
     setInterval(update_image, 1000);
@@ -40,11 +36,11 @@ var update_image = () => {
         image_update_time = Date.parse(image_update_time);
         // Check to make sure that we are not currently making a web request.
         if (!requesting_image) {
+            requesting_image = true;
             // Convert Minutes to ms, then compare to determine if the image should be updated.
             image_update_time += image_ttl * 60 * 1000;
             var current_time = Date.now();
             if (current_time > image_update_time) {
-                requesting_image = true;
                 $.ajax({
                     // Connect to Reddit and Pass Search Parameters.
                     url: `https://www.reddit.com/r/${subreddit}/search.json?q=${search_query}&limit=${fetch_posts}&sort=${sort_mode}&restrict_sr=1`,
@@ -52,11 +48,16 @@ var update_image = () => {
                     success: data => {
                         // Select a Random Post
                         var selected_post = data.data.children[Math.floor(Math.random() * data.data.children.length)];
+
+                        // Save Selected Post URI to Local Storage.
+                        localStorage.setItem("imagePostURI", `https://reddit.com/${selected_post.data.permalink}`);
+
                         // Download Post's Image to a Blob and save it to browser local storage.
                         saveImage(selected_post.data.url_overridden_by_dest);
                     }
                 });
             } else {
+                requesting_image = false;
                 return "Image has not yet Expired.";
             }
         } else {
@@ -70,7 +71,7 @@ var saveImage = (uri) => {
         url: uri,
         type: "GET",
         cache: false,
-        xhr: function() {
+        xhr: () => {
             var xhr = new XMLHttpRequest();
             xhr.responseType = 'blob';
             return xhr;
@@ -86,42 +87,26 @@ var saveImage = (uri) => {
                     // Unable to save image in browser storage.
                     requesting_image = false;
                     update_image();
+                    return;
                 }
                 // Update Image
                 $("#app").css("background-image", `url(${URL.createObjectURL(data)})`);
+                // Set Link to Post
+                $(".post_reference a").text(localStorage.getItem("imagePostURI"));
+                $(".post_reference a").attr("href", localStorage.getItem("imagePostURI"));
                 // Update Time Image was Fetched
                 localStorage.setItem("imageFetchTime", Date.now());
                 // Reset Web Request Flag
                 requesting_image = false;
             }
+        },
+        error: () => {
+            requesting_image = false;
+            update_image();
         }
     })
-}
+};
 
-var updateCountdown = (update_time) => {
-    countdownTime = Date.parse(update_time);
-}
-
-globalCounter = setInterval(function() {
-
-    // Get Current Time
-    var now = new Date().getTime();
-
-    // Find the distance between now and the count down date
-    var distance = countdownTime - now;
-
-    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-    if (distance < 0) {
-        // If the count down is finished, remove text
-        $(".countdown").text("");
-    } else {
-        // Output countdown timer
-        $(".countdown").text(`${hours}h ${minutes}m ${seconds}s`);
-    }
-
-
-
-}, 1000);
+var forceImageUpdate = () => {
+    localStorage.setItem("imageFetchTime", Date.parse("01/01/1970 00:00:00 UTC"));
+};

@@ -1,7 +1,6 @@
 "use strict";
 
 var CACHE_VERSION = 'v1';
-var required_files = ["/index.html", "/assets/style/dist/main.css", "/assets/libs/animate.min.css", "/assets/libs/jquery-3.6.0.min.js", "/assets/scripts/main.js"];
 self.addEventListener('install', function (event) {
   event.waitUntil(caches.open(CACHE_VERSION).then(function (cache) {
     return cache.addAll(required_files);
